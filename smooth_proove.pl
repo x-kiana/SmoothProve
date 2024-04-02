@@ -29,6 +29,8 @@ is_env_elem(prop(P)) :- is_var(P).
 is_env(E) :- maplist(is_env_elem, E).
 
 % is_deriv(D) when D is syntactically a derivation tree
+is_deriv(hypU(X)) :- is_var(X).
+is_deriv(atomic(Use, Prop)) :- is_deriv(Use), is_deriv(Prop).
 
 % check_set(Env, Deriv, Set) holds when Deriv proves that Set is a set
 
