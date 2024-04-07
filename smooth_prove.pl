@@ -67,7 +67,7 @@ is_set_deriv(hypS(X)) :- is_set(X).
 is_set_deriv(ddS(Verif)) :- is_verif_deriv(Verif).
 
 % check_set(Env, Deriv, Set) holds when Deriv proves that Set is a set
-check_set(Env, SetD, S) :- is_set_deriv(SetD), member(set(S), Env).
+check_set(Env, hypS(S), S) :- member(set(S), Env).
 
 % check_prop(Env, Deriv, Prop) holds when Deriv proves that Prop is a proposition
 check_prop(_, topP, top).
@@ -77,11 +77,32 @@ check_prop(_, topP, top).
 % check_verif(Env, Deriv, Prop) holds when Deriv proves Prop verif
 
 check_verif(_, topI, top).
-
 check_verif(Env, botE(UseD, PropD), Prop) :-
   check_use(Env, UseD, bot),
   check_prop(Env, PropD, Prop).
+check_verif(Env, andI(AD, BD), and(A, B)) :-
+  check_verif(Env, AD, A),
+  check_verif(Env, BD, B).
+check_verif(Env, orI1(AD, BD), or(A, B)) :-
+  check_verif(Env, AD, A),
+  check_prop(Env, BD, P).
+check_verif(Env, orI2(AD, BD), or(A, B)) :-
+  check_prop(Env, AD, A),
+  check_verif(Env, BD, B).
+check_verif(Env, orE(UseP, Verif1P, Verif2P), Prop) :-
+  check_use(Env, UseD, or(A, B)),
+  check_verif([use(L1, A)|Env], Verif1P, Prop),
+  check_verif([use(L2, B)|Env], Verif2P, Prop).
+check_verif(Env, impI(AD, BD), (A -> B)) :-
+  check_prop(Env, AD, A),
+  check_verif([use(L, A)|Env], BD, B).
+check_verif(Env, forallI(AD), all(X, A(X))) :-
+  check_verif([set(S)|Env], AD, A(S)).
+check_verif(Env, existsI(PropD, SetD, VerifD), exists(X, A)) :-
+  check_prop([set(S2)|Env], PropD, A),
+  check_set(Env, SetD, S),
+  check_verif(Env, VerifD, A).
+check_verif(Env, existsE(UseD, VerifD), Prop) :-
+  check_use(Env, UseD, exists(X, A),
+  check_verif([set(S2), use(L, A) | Env], VerifD, Prop).
 
-check_verif(Env, impI(AP, BP), (A -> B)) :-
-  check_prop(Env, AP, A),
-  check_verif([use(L, A)|Env], BP, B).
