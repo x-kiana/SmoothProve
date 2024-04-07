@@ -53,6 +53,14 @@ is_verif_deriv(atomic(Use, Prop)) :- is_use_deriv(Use), is_prop_deriv(Prop).
 is_verif_deriv(topI).
 is_verif_deriv(botE(Use, Prop)) :- is_use_deriv(Use), is_prop_deriv(Prop).
 is_verif_deriv(andI(VOne, VTwo)) :- is_verif_deriv(VOne), is_verif_deriv(VTwo).
+is_verif_deriv(orI1(Verif, Prop)) :- is_verif_deriv(Verif), is_prop_deriv(Prop).
+is_verif_deriv(orI2(Prop, Verif)) :- is_prop_deriv(Prop), is_verif_deriv(Verif).
+is_verif_deriv(orEL1L2(Use, Verif1, Verif2)) :- is_use_deriv(Use), is_verif_deriv(Verif1), is_verif_deriv(Verif2).
+is_verif_deriv(impIL1(Prop, Verif)) :- is_prop_deriv(Prop), is_verif_deriv(Verif).
+is_verif_deriv(forallI(Verif)) :- is_verif_deriv(Verif).
+is_verif_deriv(existsI(Prop, Set, Verif)) :- is_prop_deriv(Prop), is_set_deriv(Set), is_verif_deriv(Verif).
+is_verif_deriv(existsE(Use, Verif)) :- is_use_deriv(Use), is_verif_deriv(Verif).
+
 
 % is_set_deriv(D) when D is syntactically a derivation tree of a set judgement
 is_set_deriv(hypS(X)) :- is_set(X).
