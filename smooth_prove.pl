@@ -12,8 +12,8 @@ is_prop(bot).
 is_prop(and(A, B)) :- is_prop(A), is_prop(B).
 is_prop(or(A, B)) :- is_prop(A), is_prop(B).
 is_prop(A -> B) :- is_prop(A), is_prop(B).
-is_prop(all(X, A)) :- is_var(X), is_prop(A).
-is_prop(exists(X, A)) :- is_var(X), is_prop(A).
+is_prop(all(X, A(X))) :- is_var(X), is_prop(A(X)).
+is_prop(exists(X, A(X))) :- is_var(X), is_prop(A(X)).
 
 % is_set(S) when S is syntactically a set
 is_set(X) :- is_var(X).
@@ -105,4 +105,3 @@ check_verif(Env, existsI(PropD, SetD, VerifD), exists(X, A)) :-
 check_verif(Env, existsE(UseD, VerifD), Prop) :-
   check_use(Env, UseD, exists(X, A),
   check_verif([set(S2), use(L, A) | Env], VerifD, Prop).
-
