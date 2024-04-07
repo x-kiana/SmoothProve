@@ -28,7 +28,7 @@ is_env_elem(prop(P)) :- is_var(P).
 is_env(E) :- maplist(is_env_elem, E).
 
 % is_use_deriv(D) when D is syntactically a derivation tree of a use judgement
-is_use_deriv(hypU(X)) :- is_var(X).
+is_use_deriv(hypU(X)) :- is_prop(X).
 is_use_deriv(andE1(Use)) :- is_use_deriv(Use).
 is_use_deriv(andE2(Use)) :- is_use_deriv(Use).
 is_use_deriv(impE(Use, Verif)) :- is_use_deriv(Use), is_verif_deriv(Verif)
@@ -55,8 +55,8 @@ is_verif_deriv(botE(Use, Prop)) :- is_use_deriv(Use), is_prop_deriv(Prop).
 is_verif_deriv(andI(VOne, VTwo)) :- is_verif_deriv(VOne), is_verif_deriv(VTwo).
 is_verif_deriv(orI1(Verif, Prop)) :- is_verif_deriv(Verif), is_prop_deriv(Prop).
 is_verif_deriv(orI2(Prop, Verif)) :- is_prop_deriv(Prop), is_verif_deriv(Verif).
-is_verif_deriv(orEL1L2(Use, Verif1, Verif2)) :- is_use_deriv(Use), is_verif_deriv(Verif1), is_verif_deriv(Verif2).
-is_verif_deriv(impIL1(Prop, Verif)) :- is_prop_deriv(Prop), is_verif_deriv(Verif).
+is_verif_deriv(orE(Use, Verif1, Verif2)) :- is_use_deriv(Use), is_verif_deriv(Verif1), is_verif_deriv(Verif2).
+is_verif_deriv(impI(Prop, Verif)) :- is_prop_deriv(Prop), is_verif_deriv(Verif).
 is_verif_deriv(forallI(Verif)) :- is_verif_deriv(Verif).
 is_verif_deriv(existsI(Prop, Set, Verif)) :- is_prop_deriv(Prop), is_set_deriv(Set), is_verif_deriv(Verif).
 is_verif_deriv(existsE(Use, Verif)) :- is_use_deriv(Use), is_verif_deriv(Verif).
@@ -67,13 +67,21 @@ is_set_deriv(hypS(X)) :- is_set(X).
 is_set_deriv(ddS(Verif)) :- is_verif_deriv(Verif).
 
 % check_set(Env, Deriv, Set) holds when Deriv proves that Set is a set
+check_set(Env, SetD, S) :- is_set_deriv(SetD), member(set(S), Env).
 
 % check_prop(Env, Deriv, Prop) holds when Deriv proves that Prop is a proposition
-check_prop(_, trueProp, top).
+check_prop(_, topP, top).
 
 % check_use(Env, Deriv, Prop) holds when Deriv proves Prop use
 
 % check_verif(Env, Deriv, Prop) holds when Deriv proves Prop verif
+
+check_verif(_, topI, top).
+
 check_verif(Env, botE(UseD, PropD), Prop) :-
   check_use(Env, UseD, bot),
   check_prop(Env, PropD, Prop).
+
+check_verif(Env, impI(AP, BP), (A -> B)) :-
+  check_prop(Env, AP, A),
+  check_verif([use(L, A)|Env], BP, B).
