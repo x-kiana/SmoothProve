@@ -109,9 +109,12 @@ check_use(Env, hypU(PropP), use(L, Prop)) :-
 % is_use_deriv(andE1(Use))
 % is_use_deriv(andE2(Use)) 
 % is_use_deriv(impE(Use, Verif)) 
-% is_use_deriv(forallE(Use, Set)) 
-% is_use_deriv(refl(Set))
-% is_use_deriv(dd(Verif)) 
+check_use(Env, forallE(UseD, SetD), Prop) :-
+  check_use(Env, UseD, all(X, Prop)),
+  check_set(Env, SetD, _).
+check_use(Env, refl(SetD), (A = A)),
+  check_set(Env, SetD, A).
+% add check_use dd
 
 % check_verif(Env, Deriv, Prop) holds when Deriv proves Prop verif
 
@@ -137,10 +140,10 @@ check_verif(Env, impI(AD, BD), (A -> B)) :-
   check_verif([use(_, A)|Env], BD, B).
 check_verif(Env, forallI(AD), all(X, A)) :-
   check_verif([set(S)|Env], AD, A).
-check_verif(Env, existsI(PropD, SetD, VerifD), exists(_, A)) :-
-  check_prop([set(_)|Env], PropD, A),
-  check_set(Env, SetD, _),
+check_verif(Env, existsI(PropD, SetD, VerifD), exists(X, A)) :-
+  check_prop([set(X)|Env], PropD, A),
+  check_set(Env, SetD, X),
   check_verif(Env, VerifD, A).
 check_verif(Env, existsE(UseD, VerifD), Prop) :-
   check_use(Env, UseD, exists(X, A)),
-  check_verif([set(S2), use(L, A) | Env], VerifD, Prop).
+  check_verif([set(X), use(_, A) | Env], VerifD, Prop).
