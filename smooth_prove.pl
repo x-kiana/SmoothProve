@@ -56,11 +56,15 @@ is_verif_deriv(botE(Use, Prop)) :- is_use_deriv(Use), is_prop_deriv(Prop).
 is_verif_deriv(andI(VOne, VTwo)) :- is_verif_deriv(VOne), is_verif_deriv(VTwo).
 is_verif_deriv(orI1(Verif, Prop)) :- is_verif_deriv(Verif), is_prop_deriv(Prop).
 is_verif_deriv(orI2(Prop, Verif)) :- is_prop_deriv(Prop), is_verif_deriv(Verif).
-is_verif_deriv(orE(Use, Verif1, Verif2)) :- is_use_deriv(Use), is_verif_deriv(Verif1), is_verif_deriv(Verif2).
-is_verif_deriv(impI(Prop, Verif)) :- is_prop_deriv(Prop), is_verif_deriv(Verif).
-is_verif_deriv(forallI(Verif)) :- is_verif_deriv(Verif).
-is_verif_deriv(existsI(Prop, Set, Verif)) :- is_prop_deriv(Prop), is_set_deriv(Set), is_verif_deriv(Verif).
-is_verif_deriv(existsE(Use, Verif)) :- is_use_deriv(Use), is_verif_deriv(Verif).
+is_verif_deriv(orE(L1, L2, A, B, Use, Verif1, Verif2)) :- 
+  is_var(L1), is_var(L2), is_prop(A), is_prop(B), is_use_deriv(Use), is_verif_deriv(Verif1), is_verif_deriv(Verif2).
+is_verif_deriv(impI(X, Prop, Verif)) :- 
+  is_var(X), is_prop_deriv(Prop), is_verif_deriv(Verif).
+is_verif_deriv(forallI(X, Verif)) :- is_var(X), is_verif_deriv(Verif).
+is_verif_deriv(existsI(Prop, Set, Verif)) :- 
+  is_prop_deriv(Prop), is_set_deriv(Set), is_verif_deriv(Verif).
+is_verif_deriv(existsE(S1, S2, Hyp, Use, Verif)) :- 
+  is_set(S1), is_set(S2), is_prop(Hyp), is_use_deriv(Use), is_verif_deriv(Verif).
 
 
 % is_set_deriv(D) when D is syntactically a derivation tree of a set judgement
@@ -96,8 +100,8 @@ check_prop(Env, impP(AP, BP), (A -> B)) :-
 check_prop(Env, forallP(AP), all(X, A)) :-
   check_prop([set(X) | Env], AP, A).
 check_prop(Env, existsP(AP), exists(X, A)) :-
-  check_prop([set(X) | Env], AP, A).     
-  
+  check_prop([set(X) | Env], AP, A).
+
 
 
 
@@ -106,9 +110,13 @@ check_prop(Env, existsP(AP), exists(X, A)) :-
 check_use(Env, hypU(PropP), use(L, Prop)) :-
   member(use(L,Prop), Env),
   check_prop(Env, PropP, Prop).
-% is_use_deriv(andE1(Use))
-% is_use_deriv(andE2(Use)) 
-% is_use_deriv(impE(Use, Verif)) 
+check_use(Env, andE1(Use), Prop) :-
+  check_use(Env, Use, and(Prop, _)).
+check_use(Env, andE2(Use), Prop) :-
+  check_use(Env, Use, and(_, Prop)).
+check_use(Env, impE(Use, Verif), Prop) :-
+  check_use(Env, Use, Hyp -> Prop),
+  check_verif(Env, Verif, Hyp).
 check_use(Env, forallE(UseD, SetD), Prop) :-
   check_use(Env, UseD, all(X, Prop)),
   check_set(Env, SetD, _).
@@ -131,19 +139,23 @@ check_verif(Env, orI1(AD, BD), or(A, B)) :-
 check_verif(Env, orI2(AD, BD), or(A, B)) :-
   check_prop(Env, AD, A),
   check_verif(Env, BD, B).
-check_verif(Env, orE(UseP, Verif1P, Verif2P), Prop) :-
-  check_use(Env, UseP, or(A, B)),
+check_verif(Env, orE(L1, L2, A, B, Use, Verif1, Verif2), Prop) :-
+  check_use(Env, Use, or(A, B)),
   check_verif([use(_, A)|Env], Verif1P, Prop),
   check_verif([use(_, B)|Env], Verif2P, Prop).
-check_verif(Env, impI(AD, BD), (A -> B)) :-
+check_verif(Env, impI(L, AD, BD), (A -> B)) :-
   check_prop(Env, AD, A),
-  check_verif([use(_, A)|Env], BD, B).
-check_verif(Env, forallI(AD), all(X, A)) :-
-  check_verif([set(S)|Env], AD, A).
-check_verif(Env, existsI(PropD, SetD, VerifD), exists(X, A)) :-
-  check_prop([set(X)|Env], PropD, A),
-  check_set(Env, SetD, X),
-  check_verif(Env, VerifD, A).
-check_verif(Env, existsE(UseD, VerifD), Prop) :-
-  check_use(Env, UseD, exists(X, A)),
-  check_verif([set(X), use(_, A) | Env], VerifD, Prop).
+  check_verif([use(L, A)|Env], BD, B).
+check_verif(Env, forallI(Y, AD), all(X, A)) :-
+  subst(X, Y, A, AWithY),
+  check_verif([set(Y)|Env], AD, AWithY).
+check_verif(Env, existsI(S2, E, PropD, SetD, VerifD), exists(S1, Prop)) :-
+  subst(S1, S2, Prop, PropWithS2),
+  check_prop([set(S2) |Env], PropD, PropWithS2),
+  check_set(Env, SetD, E),
+  subst(S1, E, Prop, PropWithE),
+  check_verif([set(E) | Env], VerifD, PropWithE ).
+check_verif(Env, existsE(S1, S2, Hyp, UseD, VerifD), Prop) :-
+  check_use(Env, UseD, exists(S1, Hyp)),
+  subst(S1, S2, Hyp, HypeWithS2),
+  check_verif([use(HypeWithS2, S2) | Env], VerifD, Prop).
