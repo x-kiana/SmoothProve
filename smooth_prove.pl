@@ -42,7 +42,6 @@ is_use_deriv(dd(Verif)) :- is_verif_deriv(Verif).
 
 % is_prop_deriv(D) when D is syntactically a derivation tree of a prop judgement
 is_prop_deriv(hypP).
-% TODO: Should = be here?
 is_prop_deriv(eqP(A, B)) :- is_set_deriv(A), is_set_deriv(B).
 is_prop_deriv(inP(A, B)) :- is_set_deriv(A), is_set_deriv(B).
 is_prop_deriv(topP).
