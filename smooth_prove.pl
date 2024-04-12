@@ -1,8 +1,6 @@
 :- use_module(library(thread)).
 
 is_var(X) :- freeze(X, atom(X)).
-% is_var(X) :- atom(X).
-% is_var(_).
 
 % is_atomic_prop(A) when A is syntactically an atomic proposition
 is_atomic_prop(X) :- is_var(X).
@@ -80,7 +78,6 @@ check_set(Env, hypS, S) :- member(set(S), Env).
 % check_set(_, ddS(_), def(_, _)) :- false.
 
 % check_prop(Env, Deriv, Prop) holds when Deriv proves that Prop is a proposition
-
 check_prop(Env, hypP, Prop) :- member(prop(Prop), Env).
 check_prop(Env, eqP(AP, BP), (A = B)) :-
   check_set(Env, AP, A),
@@ -105,6 +102,10 @@ check_prop(Env, existsP(AP), exists(S, A)) :-
   check_prop([set(S) | Env], AP, A).
 
 % check_use(Env, Deriv, Prop) holds when Deriv proves Prop use
+% check_use(Env, andE1(UseD, Prop), Prop) :- member(use(XY, and(X, Y)), Env), check_use(Env, UseD, and(Prop, _)).
+%check_use(Env, andE1(UseD, Prop), Prop) :-
+ % member(use(_, and(Prop, _)), Env),
+ % check_use(Env, UseD, and(Prop, _)).
 
 check_use(Env, refl(SetD), (A = A)) :- check_set(Env, SetD, A).
 check_use(Env, hypU(L), Prop) :- member(use(L,Prop), Env).
@@ -122,7 +123,10 @@ check_use(Env, forallE(UseD, SetD), Prop) :-
 % add check_use dd
 
 % check_verif(Env, Deriv, Prop) holds when Deriv proves Prop verif
-
+check_verif(Env, atomic(UseD, PropD), AtomicProp) :-
+  is_atomic_prop(AtomicProp),
+  check_use(Env, UseD, AtomicProp),
+  check_prop(Env, PropD, AtomicProp).
 check_verif(_, topI, top).
 check_verif(Env, andI(AD, BD), and(A, B)) :-
   check_verif(Env, AD, A),
@@ -145,10 +149,6 @@ check_verif(Env, existsI(S2, E, PropD, SetD, VerifD), exists(S1, Prop)) :-
   check_set(Env, SetD, E),
   subst(S1, E, Prop, PropWithE),
   check_verif([set(E) | Env], VerifD, PropWithE ).
-check_verif(Env, atomic(UseD, PropD), AtomicProp) :-
-  is_atomic_prop(AtomicProp),
-  check_use(Env, UseD, AtomicProp),
-  check_prop(Env, PropD, AtomicProp).
 check_verif(Env, orE(L1, L2, Use, Verif1D, Verif2D), Prop) :-
   check_use(Env, Use, or(A, B)),
   check_verif([use(L1, A)|Env], Verif1D, Prop),
@@ -157,9 +157,15 @@ check_verif(Env, existsE(S2, L1, UseD, VerifD), Prop) :-
   check_use(Env, UseD, exists(S1, HypWithS1)),
   subst(S1, S2, HypWithS1, HypeWithS2),
   check_verif([set(S2), use(L1, HypeWithS2) | Env], VerifD, Prop).
-% check_verif(Env, botE(UseD, PropD), Prop) :-
-%   check_use(Env, UseD, bot),
-%   check_prop(Env, PropD, Prop).
+check_verif(Env, botE(UseD, PropD), Prop) :-
+  check_use(Env, UseD, bot),
+  check_prop(Env, PropD, Prop).
+
+% Wrapper for checking any judgement and making sure everything's well-formed
+check(Env, D, Prop, verif) :- is_env(Env), is_prop(Prop), check_verif(Env, D, Prop).
+check(Env, D, Prop, use) :- is_env(Env), is_prop(Prop), check_use(Env, D, Prop).
+check(Env, D, Prop, prop) :- is_env(Env), is_prop(Prop), check_prop(Env, D, Prop).
+check(Env, D, Set, set) :- is_env(Env), is_set(Set), check_set(Env, D, Set).
 
 % subst(X, Prop, PWithX, PWithoutX) holds when PWithoutX = PWithX[Prop/X]
 subst(X, Prop, X, Prop).
@@ -183,7 +189,7 @@ subst(X, Prop, in(A, B), in(AwoX, BwoX)) :-
   subst(X, Prop, A, AwoX),
   subst(X, Prop, B, BwoX).
 
-% Trying to get different search strategies to work
+% Trying to get different search strategies to work - depth first
 % midfs(true).
 % midfs(member(X, L)) :- member(X, L).
 % midfs((A, B)) :-
@@ -195,25 +201,36 @@ subst(X, Prop, in(A, B), in(AwoX, BwoX)) :-
 %   clause(Goal, Body),
 %   midfs(Body).
 % 
+
+% an implementation of breadth-first search - seems to be quite slow
 % mibfs(P) :- mibfs([], P).
 % 
 % mibfs([], true).
 % mibfs([Goal | Goals], true) :- mibfs(Goals, Goal).
 % mibfs(Goals, member(X, L)) :- member(X, L), mibfs(Goals, true).
+% mibfs(Goals, atom(A)) :- atom(A), mibfs(Goals, true).
 % mibfs(Goals, (A, B)) :-
 %   append(Goals, [A, B], NewGoals),
 %   mibfs(NewGoals, true).
 % mibfs(Goals, P) :-
 %   P \= true,
 %   P \= (_, _),
+%   P \= atom(_),
+%   P \= member(_, _),
 %   clause(P, Body),
 %   append(Goals, [Body], NewGoals),
 %   mibfs(NewGoals, true).
 
 % Cool example where if you give it a bit of structure it can complete the proof
-% Unguided: check_verif([prop(a), prop(b), prop(c), use(aUse, a), use(bUse, b), use(x, and(a, b) -> c)], D, c).
-% Guided: check_verif([prop(a), prop(b), prop(c), use(aUse, a), use(bUse, b), use(x, and(a, b) -> c)], atomic(impE(U, andI(A, B)), P), c).
-% Bigger Guided: check_verif([prop(a), prop(b), prop(c)], impI(f, _, impI(a, _, impI(b, _, atomic(impE(U, andI(A, B)), _)))), (and(a, b) -> c) -> (a -> (b -> c))).
+% Unguided: check([prop(a), prop(b), prop(c), use(aUse, a), use(bUse, b), use(x, and(a, b) -> c)], D, c, verif).
+% Guided: check([prop(a), prop(b), prop(c), use(aUse, a), use(bUse, b), use(x, and(a, b) -> c)], atomic(impE(U, andI(A, B)), P), c, verif).
+% Bigger Guided: check([prop(a), prop(b), prop(c)], impI(f, _, impI(a, _, impI(b, _, atomic(impE(U, andI(A, B)), _)))), (and(a, b) -> c) -> (a -> (b -> c)), verif).
 
 % Can do all sets are equal to themselves
-% check_verif([], D, forall(x, x = x)).
+% check([], D, forall(x, x = x), verif).
+
+% Example using bottom elimination
+% check([use(bUse, bot), prop(a), prop(b)], botE(X, Y), and(a, b), verif).
+
+% Implication transitivity
+% check([prop(a), prop(b), prop(c), use(ab, a -> b), use(bc, b -> c)], impI(a, _, atomic(impE(BC, atomic(impE(AB, A), _)), _)), a -> c, verif).
