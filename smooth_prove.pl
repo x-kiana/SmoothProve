@@ -59,8 +59,8 @@ is_verif_deriv(orI2(Prop, Verif)) :- is_prop_deriv(Prop), is_verif_deriv(Verif).
 is_verif_deriv(impI(X, Prop, Verif)) :- 
   is_var(X), is_prop_deriv(Prop), is_verif_deriv(Verif).
 is_verif_deriv(forallI(X, Verif)) :- is_var(X), is_verif_deriv(Verif).
-is_verif_deriv(existsI(Prop, Set, Verif)) :- 
-  is_prop_deriv(Prop), is_set_deriv(Set), is_verif_deriv(Verif).
+is_verif_deriv(existsI(S2, E, Prop, Set, Verif) :- 
+  is_var(S2), is_var(E), is_prop_deriv(Prop), is_set_deriv(Set), is_verif_deriv(Verif).
 is_verif_deriv(orE(L1, L2, Use, Verif1, Verif2)) :- 
   is_var(L1), is_var(L2), is_use_deriv(Use), is_verif_deriv(Verif1), is_verif_deriv(Verif2).
 is_verif_deriv(existsE(S2, L2, Use, Verif)) :- 
@@ -216,6 +216,9 @@ subst(X, Prop, in(A, B), in(AwoX, BwoX)) :-
 %   append(Goals, [Body], NewGoals),
 %   mibfs(NewGoals, true).
 
+% Same example as shown before, but now in Prolog:
+% check([use(aUse, and(a, c)), use(bUse, b), prop(a), prop(b), prop(c)], D, and(a, b), verif).
+
 % Cool example where if you give it a bit of structure it can complete the proof
 % Unguided: check([prop(a), prop(b), prop(c), use(aUse, a), use(bUse, b), use(x, and(a, b) -> c)], D, c, verif).
 % Guided: check([prop(a), prop(b), prop(c), use(aUse, a), use(bUse, b), use(x, and(a, b) -> c)], atomic(impE(U, andI(A, B)), P), c, verif).
@@ -223,9 +226,15 @@ subst(X, Prop, in(A, B), in(AwoX, BwoX)) :-
 
 % Can do all sets are equal to themselves
 % check([], D, forall(x, x = x), verif).
+% Also can show there exists a set that's equal to itself
+% check([set(a)], D, exists(x, x = x), verif).
+% check([set(a)], D, exists(x, x = x) -> bot -> bot, verif).
 
 % Example using bottom elimination
 % check([use(bUse, bot), prop(a), prop(b)], botE(X, Y), and(a, b), verif).
+
+% Constructivist example
+% check([prop(a)], D, forall(a, or(a, a -> bot) -> bot -> bot), verif).
 
 % Implication transitivity
 % check([prop(a), prop(b), prop(c), use(ab, a -> b), use(bc, b -> c)], impI(a, _, atomic(impE(BC, atomic(impE(AB, A), _)), _)), a -> c, verif).
