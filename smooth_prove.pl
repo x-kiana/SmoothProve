@@ -229,3 +229,20 @@ subst(X, Prop, in(A, B), in(AwoX, BwoX)) :-
 
 % Implication transitivity
 % check([prop(a), prop(b), prop(c), use(ab, a -> b), use(bc, b -> c)], impI(a, _, atomic(impE(BC, atomic(impE(AB, A), _)), _)), a -> c, verif).
+%
+%
+%
+%
+% Breaking down and(a, and(e,c)) to prove a works well!
+% check([prop(a), prop(b), use(aAndcUse, and(a,and(e,c))), use(bUse,b)], Proof, and(a,b), verif).
+% > Proof = andI(atomic(andE1(hypU(aAndcUse)), hypP), atomic(hypU(bUse), hypP)) 
+%
+% Breaking down and(e,and(a,c)) requires a bit of help
+%check([prop(a), prop(b), use(aAndcUse, and(e,and(a,c))), use(bUse,b)], atomic(andE1(andE2(X)), _), a, verif).
+% > X = hypU(aAndcUse) .
+%
+% Brining that that back to and(a,b)
+% check([prop(a), prop(b), use(aAndcUse, and(e,and(a,c))), use(bUse,b)], andI(atomic(andE1(andE2(X)), _),ProofB), and(a,b), verif).
+% > X = hypU(aAndcUse),
+% > ProofB = atomic(hypU(bUse), hypP)
+
