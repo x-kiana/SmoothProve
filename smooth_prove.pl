@@ -59,7 +59,7 @@ is_verif_deriv(orI2(Prop, Verif)) :- is_prop_deriv(Prop), is_verif_deriv(Verif).
 is_verif_deriv(impI(X, Prop, Verif)) :- 
   is_var(X), is_prop_deriv(Prop), is_verif_deriv(Verif).
 is_verif_deriv(forallI(X, Verif)) :- is_var(X), is_verif_deriv(Verif).
-is_verif_deriv(existsI(S2, E, Prop, Set, Verif) :- 
+is_verif_deriv(existsI(S2, E, Prop, Set, Verif)) :- 
   is_var(S2), is_var(E), is_prop_deriv(Prop), is_set_deriv(Set), is_verif_deriv(Verif).
 is_verif_deriv(orE(L1, L2, Use, Verif1, Verif2)) :- 
   is_var(L1), is_var(L2), is_use_deriv(Use), is_verif_deriv(Verif1), is_verif_deriv(Verif2).
